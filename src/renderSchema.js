@@ -17,7 +17,7 @@ function renderType(type, options) {
     return `[${renderType(type.ofType, options)}]`
   }
   const url = options.getTypeURL(type)
-  return url ? `<a href="${url}">${type.name}</a>` : type.name
+  return url ? `<a href=\\"${url}\\">${type.name}</a>` : type.name
 }
 
 function renderObject(type, options) {
@@ -34,66 +34,80 @@ function renderObject(type, options) {
   if (type.description) {
     printer(`${type.description}\n`)
   }
-  printer('<table>')
-  printer('<thead>')
-  printer('<tr>')
+  printer('[block:html]')
+  printer('{')
+  printer('"html":')
+  let tableContents = '"'
+
+  tableContents += '<table>'
+  tableContents += '<thead>'
+  tableContents += '<tr>'
   if (isInputObject) {
-    printer('<th colspan="2" align="left">Field</th>')
+    tableContents += '<th colspan=\\"2\\" align=\\"left\\">Field</th>'
   } else {
-    printer('<th align="left">Field</th>')
-    printer('<th align="right">Argument</th>')
+    tableContents += '<th align=\\"left\\">Field</th>'
+    tableContents += '<th align=\\"right\\">Argument</th>'
   }
-  printer('<th align="left">Type</th>')
-  printer('<th align="left">Description</th>')
-  printer('</tr>')
-  printer('</thead>')
-  printer('<tbody>')
+  tableContents += '<th align=\\"left\\">Type</th>'
+  tableContents += '<th align=\\"left\\">Description</th>'
+  tableContents += '</tr>'
+  tableContents += '</thead>'
+  tableContents += '<tbody>'
 
   const fields = isInputObject ? type.inputFields : type.fields
   fields.forEach(field => {
-    printer('<tr>')
-    printer(
-      `<td colspan="2" valign="top"><strong>${field.name}</strong>${
-        field.isDeprecated ? ' ⚠️' : ''
-      }</td>`
-    )
-    printer(`<td valign="top">${renderType(field.type, { getTypeURL })}</td>`)
+    tableContents += '<tr>'
+    tableContents += `<td colspan=\\"2\\" valign=\\"top\\"><strong>${
+      field.name
+    }</strong>${field.isDeprecated ? ' ⚠️' : ''}</td>`
+
+    tableContents += `<td valign=\\"top\\">${renderType(field.type, {
+      getTypeURL
+    })}</td>`
     if (field.description || field.isDeprecated) {
-      printer('<td>')
+      tableContents += '<td>'
       if (field.description) {
-        printer(`\n${field.description}\n`)
+        tableContents += `\n${field.description}\n`
       }
       if (field.isDeprecated) {
-        printer('<p>⚠️ <strong>DEPRECATED</strong></p>')
+        tableContents += '<p>⚠️ <strong>DEPRECATED</strong></p>'
         if (field.deprecationReason) {
-          printer('<blockquote>')
-          printer(`\n${field.deprecationReason}\n`)
-          printer('</blockquote>')
+          tableContents += '<blockquote>'
+          tableContents += `\n${field.deprecationReason}\n`
+          tableContents += '</blockquote>'
         }
       }
-      printer('</td>')
+      tableContents += '</td>'
     } else {
-      printer('<td></td>')
+      tableContents += '<td></td>'
     }
-    printer('</tr>')
+    tableContents += '</tr>'
     if (!isInputObject && field.args.length) {
       field.args.forEach((arg, i) => {
-        printer('<tr>')
-        printer(`<td colspan="2" align="right" valign="top">${arg.name}</td>`)
-        printer(`<td valign="top">${renderType(arg.type, { getTypeURL })}</td>`)
+        tableContents += '<tr>'
+        tableContents += `<td colspan=\\"2\\" align=\\"right\\" valign=\\"top\\">${
+          arg.name
+        }</td>`
+        tableContents += `<td valign=\\"top\\">${renderType(arg.type, {
+          getTypeURL
+        })}</td>`
         if (arg.description) {
-          printer('<td>')
-          printer(`\n${arg.description}\n`)
-          printer('</td>')
+          tableContents += '<td>'
+          tableContents += `\n${arg.description}\n`
+          tableContents += '</td>'
         } else {
-          printer(`<td></td>`)
+          tableContents += `<td></td>`
         }
-        printer('</tr>')
+        tableContents += '</tr>'
       })
     }
   })
-  printer('</tbody>')
-  printer('</table>')
+  tableContents += '</tbody>'
+  tableContents += '</table>'
+  tableContents += '"'
+  printer(tableContents)
+  printer('}')
+  printer('[/block]')
 }
 
 function renderSchema(schema, options) {
@@ -115,7 +129,7 @@ function renderSchema(schema, options) {
     return Object.assign(typeMap, { [type.name]: type })
   }, {})
   const getTypeURL = type => {
-    const url = `#${type.name.toLowerCase()}`
+    const url = `#section-${type.name.toLowerCase()}`
     if (typeMap[type.name]) {
       return url
     } else if (typeof unknownTypeURL === 'function') {
@@ -145,6 +159,13 @@ function renderSchema(schema, options) {
   sortBy(scalars, 'name')
   sortBy(interfaces, 'name')
 
+  printer('---')
+  printer(`
+  category: 5c3fa34e650f06026032e4a4
+  title: GraphQL Schema
+  `)
+  printer('---')
+
   if (!skipTitle) {
     printer(`${'#'.repeat(headingLevel)} ${title}\n`)
   }
@@ -153,45 +174,45 @@ function renderSchema(schema, options) {
     printer(`${prologue}\n`)
   }
 
-  printer('<details>')
-  printer('  <summary><strong>Table of Contents</strong></summary>\n')
-  if (query) {
-    printer('  * [Query](#query)')
-  }
-  if (mutation) {
-    printer('  * [Mutation](#mutation)')
-  }
-  if (objects.length) {
-    printer('  * [Objects](#objects)')
-    objects.forEach(type => {
-      printer(`    * [${type.name}](#${type.name.toLowerCase()})`)
-    })
-  }
-  if (inputs.length) {
-    printer('  * [Inputs](#inputs)')
-    inputs.forEach(type => {
-      printer(`    * [${type.name}](#${type.name.toLowerCase()})`)
-    })
-  }
-  if (enums.length) {
-    printer('  * [Enums](#enums)')
-    enums.forEach(type => {
-      printer(`    * [${type.name}](#${type.name.toLowerCase()})`)
-    })
-  }
-  if (scalars.length) {
-    printer('  * [Scalars](#scalars)')
-    scalars.forEach(type => {
-      printer(`    * [${type.name}](#${type.name.toLowerCase()})`)
-    })
-  }
-  if (interfaces.length) {
-    printer('  * [Interfaces](#interfaces)')
-    interfaces.forEach(type => {
-      printer(`    * [${type.name}](#${type.name.toLowerCase()})`)
-    })
-  }
-  printer('\n</details>')
+  // printer('<details>')
+  // printer('  <summary><strong>Table of Contents</strong></summary>\n')
+  // if (query) {
+  //   printer('  * [Query](#section-query)')
+  // }
+  // if (mutation) {
+  //   printer('  * [Mutation](#section-mutation)')
+  // }
+  // if (objects.length) {
+  //   printer('  * [Objects](#section-objects)')
+  //   objects.forEach(type => {
+  //     printer(`    * [${type.name}](#section-${type.name.toLowerCase()})`)
+  //   })
+  // }
+  // if (inputs.length) {
+  //   printer('  * [Inputs](#section-inputs)')
+  //   inputs.forEach(type => {
+  //     printer(`    * [${type.name}](#section-${type.name.toLowerCase()})`)
+  //   })
+  // }
+  // if (enums.length) {
+  //   printer('  * [Enums](#section-enums)')
+  //   enums.forEach(type => {
+  //     printer(`    * [${type.name}](#section-${type.name.toLowerCase()})`)
+  //   })
+  // }
+  // if (scalars.length) {
+  //   printer('  * [Scalars](#section-scalars)')
+  //   scalars.forEach(type => {
+  //     printer(`    * [${type.name}](#section-${type.name.toLowerCase()})`)
+  //   })
+  // }
+  // if (interfaces.length) {
+  //   printer('  * [Interfaces](#section-interfaces)')
+  //   interfaces.forEach(type => {
+  //     printer(`    * [${type.name}](#section-${type.name.toLowerCase()})`)
+  //   })
+  // }
+  // printer('\n</details>')
 
   if (query) {
     printer(
@@ -237,40 +258,47 @@ function renderSchema(schema, options) {
       if (type.description) {
         printer(`${type.description}\n`)
       }
-      printer('<table>')
-      printer('<thead>')
-      printer('<th align="left">Value</th>')
-      printer('<th align="left">Description</th>')
-      printer('</thead>')
-      printer('<tbody>')
+      printer('[block:html]')
+      printer('{')
+      printer('"html":')
+      let tableContents = '"'
+      tableContents += '<table>'
+      tableContents += '<thead>'
+      tableContents += '<th align=\\"left\\">Value</th>'
+      tableContents += '<th align=\\"left\\">Description</th>'
+      tableContents += '</thead>'
+      tableContents += '<tbody>'
       type.enumValues.forEach(value => {
-        printer('<tr>')
-        printer(
-          `<td valign="top"><strong>${value.name}</strong>${
-            value.isDeprecated ? ' ⚠️' : ''
-          }</td>`
-        )
+        tableContents += '<tr>'
+        tableContents += `<td valign=\\"top\\"><strong>${value.name}</strong>${
+          value.isDeprecated ? ' ⚠️' : ''
+        }</td>`
+
         if (value.description || value.isDeprecated) {
-          printer('<td>')
+          tableContents += '<td>'
           if (value.description) {
-            printer(`\n${value.description}\n`)
+            tableContents += `\n${value.description}\n`
           }
           if (value.isDeprecated) {
-            printer('<p>⚠️ <strong>DEPRECATED</strong></p>')
+            tableContents += '<p>⚠️ <strong>DEPRECATED</strong></p>'
             if (value.deprecationReason) {
-              printer('<blockquote>')
-              printer(`\n${value.deprecationReason}\n`)
-              printer('</blockquote>')
+              tableContents += '<blockquote>'
+              tableContents += `\n${value.deprecationReason}\n`
+              tableContents += '</blockquote>'
             }
           }
-          printer('</td>')
+          tableContents += '</td>'
         } else {
-          printer('<td></td>')
+          tableContents += '<td></td>'
         }
-        printer('</tr>')
+        tableContents += '</tr>'
       })
-      printer('</tbody>')
-      printer('</table>')
+      tableContents += '</tbody>'
+      tableContents += '</table>'
+      tableContents += '"'
+      printer(tableContents)
+      printer('}')
+      printer('[/block]')
     })
   }
 
