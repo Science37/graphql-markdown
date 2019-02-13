@@ -161,8 +161,8 @@ function renderSchema(schema, options) {
 
   printer('---')
   printer(`
-  category: 5c3fa34e650f06026032e4a4
-  title: GraphQL Schema
+  category: $(options.category)
+  title: $(options.title)
   `)
   printer('---')
 
