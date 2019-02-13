@@ -159,13 +159,9 @@ function renderSchema(schema, options) {
   sortBy(scalars, 'name')
   sortBy(interfaces, 'name')
 
-  printer('---')
-  printer(`
-  category: $(options.category)
-  title: $(options.title)
-  `)
-  printer('---')
-
+  // Not necessary if you use the readme.io API and and pass the category in the req.
+  //printer(`---\ncategory: ${options.category}\ntitle: "${title}"\n---\n\n`);
+  
   if (!skipTitle) {
     printer(`${'#'.repeat(headingLevel)} ${title}\n`)
   }
